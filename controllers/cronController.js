@@ -180,7 +180,8 @@ const saveTranscriptionAudio = async (recording_id) => {
 
 };
 
-const check_details = async () => {
+const check_details = async (res, resp) => {
+  console.log("API STARTED")
   const recordings = await Recording.find({ 'status': 'IN_PROGRESS' });
 
   for (const recording of recordings) {
@@ -201,6 +202,7 @@ const check_details = async () => {
       }
     }
   }
+  resp.json({"message":"Code Updated"})
 };
 
 module.exports = check_details;

@@ -29,6 +29,7 @@ const makeCall = (req, resp) => {
 }
 
 const getCalls = async (req, resp) => {
+  console.log("ds")
     try {
         const calls = await client.calls.list();
     
