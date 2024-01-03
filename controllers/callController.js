@@ -10,12 +10,18 @@ const Recording = require("../models/Recording");
 const makeCall = (req, resp) => {
     console.log(req.body)
     const number = req.body.number
+    const name = req.body.name
 
     client.calls.create({
         record: true,
-        url: "http://demo.twilio.com/docs/voice.xml",
+        twiml: `<Response>
+        <Gather input="speech dtmf" timeout="20">
+            <Say>Hi ${name}, Please say something in the next 20 seconds.</Say>
+        </Gather>
+        <Hangup/>
+        </Response>`,
         to: "+91" + number,
-        from: "+12058430304",
+        from: "+17047614402",
     })
         .then(call => {
             console.log(call.sid);
