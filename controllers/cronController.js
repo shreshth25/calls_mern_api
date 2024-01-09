@@ -3,6 +3,9 @@ const axios = require('axios');
 const fs = require('fs');
 const AWS = require('aws-sdk');
 
+const textToSpeech = require('@google-cloud/text-to-speech');
+const fs1 = require('fs').promises;
+
 AWS.config.update({
   accessKeyId: process.env.ACCESS_KEY_ID,
   secretAccessKey: process.env.SECRET_ACCESS_KEY,
@@ -180,6 +183,42 @@ const saveTranscriptionAudio = async (recording_id) => {
 
 };
 
+const saveTranscriptionAudioGoogle = async (recording_id) => {
+  try {
+    const data = await Recording.findOne({'sid': recording_id});
+
+    // Text to be converted to speech
+    const textToSpeechContent  = data['transciption'];
+
+    // Create a TextToSpeechClient
+    const textToSpeechClient = new textToSpeech.TextToSpeechClient();
+
+    // Set the Text-to-Speech request parameters
+    const request = {
+      input: { text: textToSpeechContent },
+      voice: { languageCode: 'en-US', name: 'en-US-Wavenet-J', ssmlGender: 'FEMALE' }, // You can choose a different voice
+      audioConfig: { audioEncoding: 'MP3' },
+    };
+
+    // Perform the text-to-speech conversion
+    const [response] = await textToSpeechClient.synthesizeSpeech(request);
+
+    // Save the speech as an MP3 file
+    await fs1.writeFile(`downloads/${recording_id}.mp3`, response.audioContent, 'binary');
+
+    console.log('Text converted to speech. MP3 file saved as output.mp3.');
+
+    // Update the recording status to 'SUCCESS'
+    const updatedRecording = await Recording.findOneAndUpdate(
+      { 'sid': recording_id },
+      { $set: { status: 'SUCCESS' } },
+      { new: true }
+    );
+  } catch (error) {
+    console.error('Error converting text to speech:', error);
+  }
+};
+
 const check_details = async (res, resp) => {
   console.log("API STARTED")
   const recordings = await Recording.find({ 'status': 'IN_PROGRESS' });
@@ -198,7 +237,7 @@ const check_details = async (res, resp) => {
       const rec = await Recording.findOne({'sid':recording['sid']})
       if(recording['transciption']!='')
       {
-        await saveTranscriptionAudio(recording['sid'])
+        await saveTranscriptionAudioGoogle(recording['sid'])
       }
     }
   }

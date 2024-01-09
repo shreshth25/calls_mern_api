@@ -6,10 +6,10 @@ const fs = require('fs');
 const mongoose = require("mongoose");
 const Recording = require("../models/Recording");
 const twilio = require('twilio');
+const Question = require("../models/Questions");
 const twimlURL = 'https://api.shreshthbansal.cloud/api'
 
-
-const makeCall = (req, resp) => {
+const makeCall = async (req, resp) => {
     console.log(req.body)
     const number = req.body.number
     const name = req.body.name
@@ -31,12 +31,13 @@ const makeCall = (req, resp) => {
         });
 }
 
-const voice = (req, resp)=>{
+const voice = async (req, resp)=>{
     const twiml = new twilio.twiml.VoiceResponse();
     twiml.say('Please answer the following questions.');
     twiml.pause({ length: 1 });
+    const question = await Question.findOne({'question_id':1})
 
-    twiml.say('Question 1: What is your name?');
+    twiml.say(question['question']);
     twiml.gather({
         input: 'speech',
         timeout: 3, // Adjust the timeout as needed
@@ -47,7 +48,8 @@ const voice = (req, resp)=>{
     resp.send(twiml.toString());
 };
 
-const secondQuestion = (req, resp)=>{
+const secondQuestion = async (req, resp)=>{
+  console.log(req.body)
   const userSpeech = req.body.SpeechResult;
   console.log('Speech result for Question 1:', userSpeech);
 
@@ -55,7 +57,9 @@ const secondQuestion = (req, resp)=>{
   const twiml = new twilio.twiml.VoiceResponse();
   twiml.pause({ length: 1 });
 
-  twiml.say('Question 2: Where are you located?');
+  const question = await Question.findOne({'question_id':2})
+
+  twiml.say(question['question']);
   twiml.gather({
       input: 'speech',
       timeout: 3, // Adjust the timeout as needed
@@ -66,8 +70,29 @@ const secondQuestion = (req, resp)=>{
     resp.send(twiml.toString());
 }
 
+const thirdQuestion = async (req, resp)=>{
+  const userSpeech = req.body.SpeechResult;
+  console.log('Speech result for Question 1:', userSpeech);
 
-const thirdQuestion = (req, resp)=>{
+  // After gathering the response for the first question, initiate the second question
+  const twiml = new twilio.twiml.VoiceResponse();
+  twiml.pause({ length: 1 });
+
+  const question = await Question.findOne({'question_id':3})
+
+  twiml.say(question['question']);
+  twiml.gather({
+      input: 'speech',
+      timeout: 3, // Adjust the timeout as needed
+      action: twimlURL+'/last-question', // Fix the action URL
+  });
+
+    resp.type('text/xml');
+    resp.send(twiml.toString());
+}
+
+
+const lastQuestion = (req, resp)=>{
   const userSpeech = req.body.SpeechResult;
   console.log('Speech result for Question 2:', userSpeech);
   const twiml = new twilio.twiml.VoiceResponse();
@@ -120,5 +145,35 @@ const getRecordings = async (req, resp) => {
     }
 };
 
+const getQuestions = async (req, resp) => {
+  try {
+      const questions = await Question.find()
+      resp.json({"data": questions});
+  } catch (error) {
+      console.error('Error fetching questions:', error);
+      resp.status(500).json({"error": "Internal Server Error"});
+  }
+};
 
-module.exports = {makeCall, getCalls, getRecordings, voice, secondQuestion, thirdQuestion};
+
+const saveQuestions = async (req, resp) => {
+  console.log(1)
+  try {
+    const itemId = req.params.id;
+    const { question } = req.body;
+    console.log(itemId, question)
+    const updatedItem = await Question.findOneAndUpdate(
+      { 'question_id': itemId },
+      { $set: { question } },
+      { new: true }
+    );
+    console.log(updatedItem)
+    resp.json(updatedItem);
+  } catch (error) {
+    console.log(error)
+    resp.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
+module.exports = {makeCall, getCalls, getRecordings, voice, secondQuestion, thirdQuestion, lastQuestion, getQuestions, saveQuestions};
