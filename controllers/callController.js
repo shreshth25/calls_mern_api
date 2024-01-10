@@ -34,12 +34,13 @@ const makeCall = async (req, resp) => {
 const voice = async (req, resp)=>{
     const twiml = new twilio.twiml.VoiceResponse();
     twiml.say('Please answer the following questions.');
-    twiml.pause({ length: 1 });
+    
     const question = await Question.findOne({'question_id':1})
 
     twiml.say(question['question']);
     twiml.gather({
         input: 'speech',
+        speechTimeout: 2,
         timeout: 3, // Adjust the timeout as needed
         action: twimlURL+'/second-question', // Fix the action URL
     });
@@ -55,13 +56,12 @@ const secondQuestion = async (req, resp)=>{
 
   // After gathering the response for the first question, initiate the second question
   const twiml = new twilio.twiml.VoiceResponse();
-  twiml.pause({ length: 1 });
-
   const question = await Question.findOne({'question_id':2})
 
   twiml.say(question['question']);
   twiml.gather({
       input: 'speech',
+      speechTimeout: 2,
       timeout: 3, // Adjust the timeout as needed
       action: twimlURL+'/third-question', // Fix the action URL
   });
@@ -76,13 +76,14 @@ const thirdQuestion = async (req, resp)=>{
 
   // After gathering the response for the first question, initiate the second question
   const twiml = new twilio.twiml.VoiceResponse();
-  twiml.pause({ length: 1 });
+
 
   const question = await Question.findOne({'question_id':3})
 
   twiml.say(question['question']);
   twiml.gather({
       input: 'speech',
+      speechTimeout: 2,
       timeout: 3, // Adjust the timeout as needed
       action: twimlURL+'/last-question', // Fix the action URL
   });
