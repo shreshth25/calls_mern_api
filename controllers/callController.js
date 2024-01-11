@@ -41,7 +41,7 @@ const voice = async (req, resp)=>{
     twiml.gather({
         input: 'speech',
         speechTimeout: 2,
-        timeout: 8, // Adjust the timeout as needed
+        timeout: 3, // Adjust the timeout as needed
         action: twimlURL+'/second-question', // Fix the action URL
     });
 
@@ -62,7 +62,7 @@ const secondQuestion = async (req, resp)=>{
   twiml.gather({
       input: 'speech',
       speechTimeout: 2,
-      timeout: 8, // Adjust the timeout as needed
+      timeout: 3, // Adjust the timeout as needed
       action: twimlURL+'/third-question', // Fix the action URL
   });
 
@@ -84,7 +84,7 @@ const thirdQuestion = async (req, resp)=>{
   twiml.gather({
       input: 'speech',
       speechTimeout: 2,
-      timeout: 8, // Adjust the timeout as needed
+      timeout: 3, // Adjust the timeout as needed
       action: twimlURL+'/last-question', // Fix the action URL
   });
 
