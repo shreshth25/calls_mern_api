@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 const Recording = require("../models/Recording");
 const twilio = require('twilio');
 const Question = require("../models/Questions");
-const twimlURL = 'https://7489-2401-4900-1f3b-572e-a867-4b3f-8dc4-56de.ngrok-free.app/api'
+const twimlURL = 'https://api.shreshthbansal.cloud/api'
 
 const { Configuration, OpenAIApi } = require("openai");
 const config = new Configuration({
