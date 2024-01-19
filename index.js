@@ -8,7 +8,7 @@ const PORT = 8000
 var cron = require('node-cron');
 const check_details = require('./controllers/cronController')
 
-
+app.use(express.urlencoded({ extended: true })); 
 app.use(cors())
 app.use(express.json())
 app.use('/downloads', express.static('downloads'))

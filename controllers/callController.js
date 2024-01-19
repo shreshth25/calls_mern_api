@@ -7,7 +7,13 @@ const mongoose = require("mongoose");
 const Recording = require("../models/Recording");
 const twilio = require('twilio');
 const Question = require("../models/Questions");
-const twimlURL = 'https://api.shreshthbansal.cloud/api'
+const twimlURL = 'https://7489-2401-4900-1f3b-572e-a867-4b3f-8dc4-56de.ngrok-free.app/api'
+
+const { Configuration, OpenAIApi } = require("openai");
+const config = new Configuration({
+	apiKey: process.env.OPEN_AI_TOKEN,
+});
+const openai = new OpenAIApi(config);
 
 const makeCall = async (req, resp) => {
     console.log(req.body)
@@ -32,39 +38,59 @@ const makeCall = async (req, resp) => {
 }
 
 const voice = async (req, resp)=>{
+    const userSpeech = req.body.SpeechResult;
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say('Please answer the following questions.');
+    const question = "Hi how may i assist you today? you can ask me any questions Or you can press 1 to terminate the call"
 
-    const question = await Question.findOne({'question_id':1})
-
-    twiml.say(question['question']);
+    twiml.say(question);
     twiml.gather({
-        input: 'speech',
-        speechTimeout: 4,
+        input: 'dtmf speech',
+        speechTimeout: 3,
+        numDigits: 1,
+        speechModel: 'phone_call',
+        language: 'en-IN',
         timeout: 6, // Adjust the timeout as needed
         action: twimlURL+'/second-question', // Fix the action URL
     });
-
+    twiml.say("We didn't receive the response ending the call for now");
     resp.type('text/xml');
     resp.send(twiml.toString());
 };
 
 const secondQuestion = async (req, resp)=>{
-  console.log(req.body)
-  const userSpeech = req.body.SpeechResult;
-  console.log('Speech result for Question 1:', userSpeech);
-
-  // After gathering the response for the first question, initiate the second question
   const twiml = new twilio.twiml.VoiceResponse();
-  const question = await Question.findOne({'question_id':2})
+  console.log(req.body)
+  if(!req.body)
+  {
+    twiml.say("We didn't receive the response ending the call for now");
+    resp.type('text/xml');
+    resp.send(twiml.toString());
+    return
+  }
+  if(req.body && req.body.Digits && req.body.Digits=='1')
+  {
+    twiml.say("Thank for contacting us");
+    resp.type('text/xml');
+    resp.send(twiml.toString());
+    return
+  }
+  const userSpeech = req.body.SpeechResult;
+  console.log("User Speech: " + userSpeech)
+  const ai_response = await generateOpenAICompletion(userSpeech);  
+  console.log(ai_response)
+  const completeResponse = `${ai_response} You can ask me the next question or just press 1 to terminate the call`;
 
-  twiml.say(question['question']);
+  twiml.say(completeResponse);
   twiml.gather({
-      input: 'speech',
-      speechTimeout: 4,
+      input: 'dtmf speech',
+      speechTimeout: 3,
+      numDigits: 1,
+      speechModel: 'phone_call',
+      language: 'en-IN',
       timeout: 6, // Adjust the timeout as needed
-      action: twimlURL+'/third-question', // Fix the action URL
+      action: twimlURL+'/second-question', // Fix the action URL
   });
+  twiml.say("We didn't receive the response ending the call for now");
 
     resp.type('text/xml');
     resp.send(twiml.toString());
@@ -78,9 +104,9 @@ const thirdQuestion = async (req, resp)=>{
   const twiml = new twilio.twiml.VoiceResponse();
 
 
-  const question = await Question.findOne({'question_id':3})
-
-  twiml.say(question['question']);
+  const ai_response = await generateOpenAICompletion(userSpeech);
+  
+  twiml.say(ai_response);
   twiml.gather({
       input: 'speech',
       speechTimeout: 4,
@@ -176,5 +202,18 @@ const saveQuestions = async (req, resp) => {
   }
 };
 
+
+const generateOpenAICompletion = async (prompt) => {
+  try {
+    const response = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: [{role: 'user', content: prompt}],
+    });
+
+      return response.data.choices[0].message.content;
+  } catch (error) {
+      console.error('Error generating OpenAI completion:', error);
+  }
+};
 
 module.exports = {makeCall, getCalls, getRecordings, voice, secondQuestion, thirdQuestion, lastQuestion, getQuestions, saveQuestions};
