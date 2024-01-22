@@ -40,17 +40,18 @@ const makeCall = async (req, resp) => {
 const voice = async (req, resp)=>{
     const userSpeech = req.body.SpeechResult;
     const twiml = new twilio.twiml.VoiceResponse();
-    const question = "Hi how may i assist you today? you can ask me any questions Or you can press 1 to terminate the call"
+    const question = "Hello, how can I help you today? Feel free to ask me any questions, and press '#' when you're finished speaking."
 
     twiml.say(question);
     twiml.gather({
         input: 'dtmf speech',
-        speechTimeout: 3,
+        speechTimeout: 2,
         numDigits: 1,
         speechModel: 'phone_call',
         language: 'en-IN',
-        timeout: 6, // Adjust the timeout as needed
+        timeout: 5, // Adjust the timeout as needed
         action: twimlURL+'/second-question', // Fix the action URL
+        finishOnKey: '#',
     });
     twiml.say("We didn't receive the response ending the call for now");
     resp.type('text/xml');
@@ -76,19 +77,21 @@ const secondQuestion = async (req, resp)=>{
   }
   const userSpeech = req.body.SpeechResult;
   console.log("User Speech: " + userSpeech)
+  twiml.say('Kindly hold on as we process your request.')
   const ai_response = await generateOpenAICompletion(userSpeech);  
   console.log(ai_response)
-  const completeResponse = `${ai_response} You can ask me the next question or just press 1 to terminate the call`;
+  const completeResponse = `${ai_response} You can ask me the next question and press '#' when you're finished speaking or just press 1 to terminate the call`;
 
   twiml.say(completeResponse);
   twiml.gather({
       input: 'dtmf speech',
-      speechTimeout: 3,
+      speechTimeout: 2,
       numDigits: 1,
       speechModel: 'phone_call',
       language: 'en-IN',
-      timeout: 6, // Adjust the timeout as needed
+      timeout: 5, // Adjust the timeout as needed
       action: twimlURL+'/second-question', // Fix the action URL
+      finishOnKey: '#',
   });
   twiml.say("We didn't receive the response ending the call for now");
 
