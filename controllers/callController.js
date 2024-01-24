@@ -10,6 +10,7 @@ const Question = require("../models/Questions");
 const twimlURL = 'https://api.shreshthbansal.cloud/api'
 
 const { Configuration, OpenAIApi } = require("openai");
+const Chat = require("../models/Chat");
 const config = new Configuration({
 	apiKey: process.env.OPEN_AI_TOKEN,
 });
@@ -78,7 +79,7 @@ const secondQuestion = async (req, resp)=>{
   const userSpeech = req.body.SpeechResult;
   console.log("User Speech: " + userSpeech)
   twiml.say('Kindly hold on as we process your request.')
-  const ai_response = await generateOpenAICompletion(userSpeech);  
+  const ai_response = await generateOpenAICompletion(req.body.CallSid, userSpeech);  
   console.log(ai_response)
   const completeResponse = `${ai_response} You can ask me the next question and press '#' when you're finished speaking or just press 1 to terminate the call`;
 
@@ -206,17 +207,35 @@ const saveQuestions = async (req, resp) => {
 };
 
 
-const generateOpenAICompletion = async (prompt) => {
+const generateOpenAICompletion = async (callSid, prompt) => {
   try {
+    const callConversation = await getCallConversation(callSid);
+    const extractedMessages = callConversation.messages.map(({ role, content }) => ({ role, content }));
     const response = await openai.createChatCompletion({
       model: "gpt-3.5-turbo",
-      messages: [{role: 'user', content: prompt}],
+      messages: [...extractedMessages, { role: 'user', content: prompt }],
     });
 
-      return response.data.choices[0].message.content;
+      const res =  response.data.choices[0].message.content;
+      callConversation.messages.push({ role: 'user', content: prompt });
+      callConversation.messages.push({ role: 'assistant', content: res });
+      await callConversation.save()
+      return res
   } catch (error) {
       console.error('Error generating OpenAI completion:', error);
   }
+};
+
+
+const getCallConversation = async (callSid) => {
+  let callConversation = await Chat.findOne({ callSid });
+
+  if (!callConversation) {
+    callConversation = new Chat({ callSid, messages: [] });
+    await callConversation.save();
+  }
+
+  return callConversation;
 };
 
 module.exports = {makeCall, getCalls, getRecordings, voice, secondQuestion, thirdQuestion, lastQuestion, getQuestions, saveQuestions};
