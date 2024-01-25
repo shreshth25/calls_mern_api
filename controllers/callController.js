@@ -41,6 +41,7 @@ const makeCall = async (req, resp) => {
 const voice = async (req, resp)=>{
     const userSpeech = req.body.SpeechResult;
     const twiml = new twilio.twiml.VoiceResponse();
+    twiml.play('https://shreshthbansaltranscriberecordings.s3.ap-southeast-2.amazonaws.com/music.mp3')
     const question = "Hello, how can I help you today? Feel free to ask me any questions, and press '#' when you're finished speaking."
 
     twiml.say(question);
@@ -79,6 +80,7 @@ const secondQuestion = async (req, resp)=>{
   const userSpeech = req.body.SpeechResult;
   console.log("User Speech: " + userSpeech)
   twiml.say('Kindly hold on as we process your request.')
+  twiml.play('https://shreshthbansaltranscriberecordings.s3.ap-southeast-2.amazonaws.com/music.mp3')
   const ai_response = await generateOpenAICompletion(req.body.CallSid, userSpeech);  
   console.log(ai_response)
   const completeResponse = `${ai_response} You can ask me the next question and press '#' when you're finished speaking or just press 1 to terminate the call`;
